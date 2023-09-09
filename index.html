@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Cliente WebSocket</title>
+    <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .chat-container {
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 20px;
+    border: 1px solid #ccc;
+    background-color: #f5f5f5;
+  }
+  .message-container {
+    display: flex;
+    flex-direction: column;
+  }
+  .user-chat-name{
+    font-size: 12px !important;
+    font-weight: bold;
+  }
+  .message {
+    padding: 10px;
+    border-radius: 5px;
+    margin-top: 10px;
+    max-width: 70%;
+    font-size: 14px;
+  }
+  .user-message {
+    background-color: #dcf8c6;
+    align-self: flex-end;
+  }
+  .assistant-message {
+    background-color: #f9f9f9;
+    align-self: flex-start;
+  }
+  .message-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+  }
+  .message-input {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+  }
+  .send-button {
+    padding: 10px 15px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  .system-message{
+    font-size: 11px;
+  }  
+  </style>
+    <script
+  src="https://code.jquery.com/jquery-3.6.4.js"
+  integrity="sha256-a9jBBRygX1Bh5lt8GZjXDzyOB+bWve9EiO7tROUtj/E="
+  crossorigin="anonymous"></script>
+<script>
+  
+
+  let clientID= null;
+  let ws = new WebSocket("ws://localhost:9000");
+  ws.onmessage = message =>{
+    const response = JSON.parse(message.data);
+    if(response.method === "connect")
+      clientID = response.clientID;
+
+    if(response.method === "broadcast"){
+
+      if(response.message.type === "newUser"){
+        $('.message-container').append('<p class="system-message">El usuario '+response.message.nickname+' se ha conectado.</p>')
+      }
+      
+      if(response.message.type === "newChatMessage"){
+        console.log(response.message)
+        if(response.message.clientID == clientID){
+          //Mensaje propio
+          $('.message-container').append('<div class="message user-message"><div class="user-chat-name">'+response.message.nickname+'</div><div>'+response.message.message+'</div></div>')
+        }else{
+          //Mensaje externo
+          $('.message-container').append('<div class="message assistant-message"><div class="user-chat-name">'+response.message.nickname+'</div><div>'+response.message.message+'</div></div>')
+        }
+      }
+    }
+
+    if(response.method === "communication"){
+      console.log(response.message)
+      if(response.message.type === "logged" && response.message.value === 'in'){
+        if(response.message.nickname != ""){
+          $('#loginForm').hide();
+          $('#chatDiv').show();
+
+        }
+      }
+    }
+  }
+
+  function entrar(){
+    const payLoad ={
+      "method" : "login",
+      "clientID" : clientID,
+      "nickname" : $('#nickname').val()
+    }
+
+    ws.send(JSON.stringify(payLoad));
+  }
+
+  function sendMessage(){
+    let msg = $('#inpMessage').val();
+    const payLoad ={
+      "method" : "chatMessage",
+      "clientID" : clientID,
+      "message" : msg
+    }
+    ws.send(JSON.stringify(payLoad));
+    $('#inpMessage').val("");
+  }
+</script>
+  </head>
+  <body>
+    <div id="loginForm" class="chat-container">
+    
+      <label for="nickname">Nickname:</label>
+      <input type="text" class="message-input" id="nickname" name="nickname">
+      <input type="button" class="send-button" onClick="entrar()" value="Entrar">
+      
+    </div>
+
+    <div id="chatDiv" style="display: none">
+      <div class="chat-container">
+        <div class="message-container">
+          
+        </div>
+        <div class="message-box">
+          <input type="text" id="inpMessage" class="message-input" placeholder="Escribe tu mensaje...">
+          <button class="send-button" onClick="sendMessage()">Enviar</button>
+        </div>
+      </div>
+    </div>
+
+    
+  </body>
+</html>
