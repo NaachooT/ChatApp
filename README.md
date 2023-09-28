@@ -1,6 +1,6 @@
 # ChatApp
 
-Simple app using NodeJS with WebSocket.io to create a simple real-time chat app.
+Simple app using NodeJS with WebSocket.io to create a real-time chat app.
 
 ## Installing
 ```
